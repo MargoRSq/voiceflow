@@ -44,32 +44,43 @@ fn pick() -> Result<(String, Device)> {
 /// Fires on a *tap* of Alt+Shift: both held, then released without any other
 /// key in between. Holding Alt+Shift+X stays available to other apps.
 pub fn spawn(on_trigger: impl Fn() + Send + 'static) -> Result<()> {
-    let (name, mut dev) = pick()?;
-    eprintln!("hotkey: listening on {name:?} for Alt+Shift tap");
+    // Report the first attempt so startup is not silent, then keep trying
+    // regardless: the device we want is created by another program.
+    match pick() {
+        Ok((name, _)) => eprintln!("hotkey: listening on {name:?} for Alt+Shift tap"),
+        Err(e) => eprintln!("hotkey: no device yet ({e}), will keep looking"),
+    }
 
     std::thread::spawn(move || {
-        let mut chord = Chord::default();
-
         loop {
-            let events = match dev.fetch_events() {
-                Ok(e) => e,
-                Err(e) => {
-                    eprintln!("hotkey: {e}");
-                    return;
-                }
-            };
-
-            for ev in events {
-                let EventSummary::Key(_, key, value) = ev.destructure() else {
-                    continue;
-                };
-                if chord.feed(key, value) {
-                    on_trigger();
-                }
+            if let Ok((name, dev)) = pick() {
+                listen(dev, &on_trigger);
+                // Remappers like Toshy recreate their virtual keyboard when they
+                // restart, which invalidates our fd. Losing the hotkey until the
+                // daemon itself is restarted is not acceptable, so reattach.
+                eprintln!("hotkey: {name:?} went away, waiting for it to come back");
             }
+            std::thread::sleep(std::time::Duration::from_secs(2));
         }
     });
     Ok(())
+}
+
+fn listen(mut dev: Device, on_trigger: &impl Fn()) {
+    let mut chord = Chord::default();
+    loop {
+        let Ok(events) = dev.fetch_events() else {
+            return;
+        };
+        for ev in events {
+            let EventSummary::Key(_, key, value) = ev.destructure() else {
+                continue;
+            };
+            if chord.feed(key, value) {
+                on_trigger();
+            }
+        }
+    }
 }
 
 #[derive(Default)]
