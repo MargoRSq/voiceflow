@@ -44,16 +44,16 @@ fn pick() -> Result<(String, Device)> {
 /// Fires on a *tap* of Alt+Shift: both held, then released without any other
 /// key in between. Holding Alt+Shift+X stays available to other apps.
 pub fn spawn(on_trigger: impl Fn() + Send + 'static) -> Result<()> {
-    // Report the first attempt so startup is not silent, then keep trying
-    // regardless: the device we want is created by another program.
-    match pick() {
-        Ok((name, _)) => eprintln!("hotkey: listening on {name:?} for Alt+Shift tap"),
-        Err(e) => eprintln!("hotkey: no device yet ({e}), will keep looking"),
+    if let Err(e) = pick() {
+        eprintln!("hotkey: no device yet ({e}), will keep looking");
     }
 
     std::thread::spawn(move || {
+        // Log every attach and every loss, so the journal always shows whether
+        // the hotkey is live right now.
         loop {
             if let Ok((name, dev)) = pick() {
+                eprintln!("hotkey: listening on {name:?} for Alt+Shift tap");
                 listen(dev, &on_trigger);
                 // Remappers like Toshy recreate their virtual keyboard when they
                 // restart, which invalidates our fd. Losing the hotkey until the
