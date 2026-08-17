@@ -1,0 +1,22 @@
+[package]
+name = "voiceflow"
+version = "0.1.0"
+edition = "2024"
+description = "Local voice dictation for Linux with a live transcription overlay"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/MargoRSq/voiceflow"
+readme = "README.md"
+keywords = ["speech-to-text", "dictation", "asr", "linux", "wayland"]
+categories = ["multimedia::audio", "command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0.104"
+chrono = "0.4.45"
+cpal = "0.18.2"
+eframe = { version = "0.36.1", default-features = false, features = ["glow", "x11", "wayland", "default_fonts"] }
+evdev = "0.13.2"
+hound = "3.5.1"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+parakeet-rs = "0.3.7"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+x11rb = "0.14.0"

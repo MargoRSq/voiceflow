@@ -1,0 +1,21 @@
+[Unit]
+Description=voiceflow — voice dictation daemon
+
+# The overlay is an X11 window and the hotkey listener needs the session's
+# input devices, so this only makes sense inside a graphical session.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/voiceflow
+# Loading the 0.6B model takes a couple of seconds; do not treat that as a hang.
+TimeoutStartSec=60
+Restart=on-failure
+RestartSec=3
+# Keeps the journal readable: the daemon logs one line per toggle.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
