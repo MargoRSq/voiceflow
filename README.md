@@ -69,9 +69,14 @@ tar -xzf voiceflow-*-x86_64-linux-gnu.tar.gz
 install -Dm755 voiceflow ~/.local/bin/voiceflow
 ```
 
-Builds exist for `x86_64` and `aarch64` and need glibc 2.35 or newer
-(Ubuntu 22.04+, Debian 12+, Fedora 36+). There is no musl build — ONNX Runtime
-publishes no musl binaries, so Alpine is not supported.
+Builds exist for `x86_64` and `aarch64`. They need **glibc 2.39 and
+libstdc++ 13** or newer — Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch,
+Tumbleweed. Ubuntu 22.04 and Debian 12 are too old.
+
+That floor comes from the prebuilt ONNX Runtime that `ort` links in, not from
+this code. For the same reason there is no musl build and Alpine is
+unsupported: upstream publishes `linux-gnu` binaries only. On an older
+distribution, build from source against your own toolchain.
 
 ### From source
 
