@@ -8,7 +8,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/voiceflow
+ExecStart=/usr/bin/voiceflow
 # Loading the 0.6B model takes a couple of seconds; do not treat that as a hang.
 TimeoutStartSec=60
 Restart=on-failure

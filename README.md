@@ -55,6 +55,26 @@ sudo apt install libasound2-dev libssl-dev pkg-config fonts-inter
 
 ## Install
 
+Grab a package from [Releases](https://github.com/MargoRSq/voiceflow/releases):
+
+```sh
+sudo apt install ./voiceflow_*_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./voiceflow-*.x86_64.rpm    # Fedora, RHEL
+```
+
+Or the portable tarball for anything else:
+
+```sh
+tar -xzf voiceflow-*-x86_64-linux-gnu.tar.gz
+install -Dm755 voiceflow ~/.local/bin/voiceflow
+```
+
+Builds exist for `x86_64` and `aarch64` and need glibc 2.35 or newer
+(Ubuntu 22.04+, Debian 12+, Fedora 36+). There is no musl build — ONNX Runtime
+publishes no musl binaries, so Alpine is not supported.
+
+### From source
+
 ```sh
 git clone https://github.com/MargoRSq/voiceflow
 cd voiceflow

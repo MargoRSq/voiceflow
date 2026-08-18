@@ -9,6 +9,39 @@ readme = "README.md"
 keywords = ["speech-to-text", "dictation", "asr", "linux", "wayland"]
 categories = ["multimedia::audio", "command-line-utilities"]
 
+# Runtime deps only: X11/Wayland/GL are dlopen'd by winit, and ONNX Runtime is
+# linked statically, so the binary needs remarkably little.
+[package.metadata.deb]
+maintainer = "Svyatoslav Kvartovkin <slava1kvartovkin@gmail.com>"
+depends = "libc6, libasound2, libstdc++6"
+recommends = "wl-clipboard, ydotool"
+section = "sound"
+priority = "optional"
+extended-description = """\
+Tap a hotkey, speak, and the transcript is pasted where you were typing.
+Recognition runs offline on the CPU. The speech model is not bundled and is
+downloaded separately; see the README."""
+assets = [
+    ["target/release/voiceflow", "usr/bin/", "755"],
+    ["packaging/voiceflow.desktop", "usr/share/applications/", "644"],
+    ["systemd/voiceflow.service", "usr/lib/systemd/user/", "644"],
+    ["README.md", "usr/share/doc/voiceflow/", "644"],
+    ["LICENSE-MIT", "usr/share/doc/voiceflow/", "644"],
+    ["LICENSE-APACHE", "usr/share/doc/voiceflow/", "644"],
+]
+
+[package.metadata.generate-rpm]
+summary = "Local voice dictation with a live transcription overlay"
+requires = { alsa-lib = "*", "libstdc++" = "*" }
+assets = [
+    { source = "target/release/voiceflow", dest = "/usr/bin/voiceflow", mode = "755" },
+    { source = "packaging/voiceflow.desktop", dest = "/usr/share/applications/voiceflow.desktop", mode = "644" },
+    { source = "systemd/voiceflow.service", dest = "/usr/lib/systemd/user/voiceflow.service", mode = "644" },
+    { source = "README.md", dest = "/usr/share/doc/voiceflow/README.md", mode = "644" },
+    { source = "LICENSE-MIT", dest = "/usr/share/doc/voiceflow/LICENSE-MIT", mode = "644" },
+    { source = "LICENSE-APACHE", dest = "/usr/share/doc/voiceflow/LICENSE-APACHE", mode = "644" },
+]
+
 [dependencies]
 anyhow = "1.0.104"
 chrono = "0.4.45"

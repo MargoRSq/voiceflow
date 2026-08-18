@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=voiceflow
+GenericName=Voice dictation history
+Comment=Dictation history and statistics
+Exec=/usr/bin/voiceflow ui
+Icon=audio-input-microphone
+Terminal=false
+Categories=Utility;AudioVideo;
+StartupWMClass=voiceflow-ui

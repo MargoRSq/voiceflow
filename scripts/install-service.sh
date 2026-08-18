@@ -10,7 +10,9 @@ BIN="${VOICEFLOW_BIN:-$HOME/.local/bin/voiceflow}"
 [ -x "$BIN" ] || { echo "no voiceflow binary at $BIN — run: cargo build --release && install -Dm755 target/release/voiceflow $BIN" >&2; exit 1; }
 
 mkdir -p "$UNIT_DIR"
-install -m644 "$ROOT/systemd/voiceflow.service" "$UNIT_DIR/voiceflow.service"
+# The shipped unit points at /usr/bin (that is where packages put it); a
+# from-source install runs the binary out of the user's own bin directory.
+sed "s|^ExecStart=.*|ExecStart=$BIN|" "$ROOT/systemd/voiceflow.service" > "$UNIT_DIR/voiceflow.service"
 
 # The overlay talks X11 and the session bus; the user manager needs those in
 # its environment or the daemon starts blind.

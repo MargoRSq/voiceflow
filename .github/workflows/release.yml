@@ -1,0 +1,119 @@
+name: release
+
+# Tag a version to publish: git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Built on 22.04 rather than the newest image on purpose: the binary
+          # then requires only glibc 2.35, which covers Ubuntu 22.04+,
+          # Debian 12+ and Fedora 36+. Building on 24.04 would demand glibc 2.39
+          # and refuse to start on all of them.
+          - runner: ubuntu-22.04
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libssl-dev pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test
+        run: cargo test --release
+
+      - name: Build
+        run: cargo build --release
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deb,cargo-generate-rpm
+
+      - name: Package
+        run: |
+          set -eux
+          VERSION="${GITHUB_REF_NAME#v}"
+          OUT=dist
+          mkdir -p "$OUT"
+
+          strip target/release/voiceflow
+          TAR="voiceflow-${GITHUB_REF_NAME}-${{ matrix.arch }}-linux-gnu.tar.gz"
+          tar -czf "$OUT/$TAR" \
+            -C target/release voiceflow \
+            -C "$GITHUB_WORKSPACE" README.md LICENSE-MIT LICENSE-APACHE \
+            systemd/voiceflow.service packaging/voiceflow.desktop
+
+          cargo deb --no-build --no-strip -o "$OUT"
+          cargo generate-rpm -o "$OUT"
+
+          cd "$OUT" && sha256sum * > "SHA256SUMS-${{ matrix.arch }}.txt"
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.arch }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          ls -la dist
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes "$(cat <<'EOF'
+          ### Install
+
+          **Debian / Ubuntu**
+          ```sh
+          sudo apt install ./voiceflow_*_amd64.deb
+          ```
+
+          **Fedora / RHEL**
+          ```sh
+          sudo dnf install ./voiceflow-*.x86_64.rpm
+          ```
+
+          **Any other distribution**
+          ```sh
+          tar -xzf voiceflow-*-x86_64-linux-gnu.tar.gz
+          install -Dm755 voiceflow ~/.local/bin/voiceflow
+          ```
+
+          Builds are made on Ubuntu 22.04, so they need glibc 2.35 or newer
+          (Ubuntu 22.04+, Debian 12+, Fedora 36+). There is no musl build:
+          ONNX Runtime ships no musl binaries, so Alpine is not supported.
+
+          The speech model is ~2.6 GB and is not bundled — see the README for
+          the one-liner that fetches it.
+          EOF
+          )"
